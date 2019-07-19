@@ -36,7 +36,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			logRequest(r, fmt.Sprintf("=> %s (user=%s)", hostCfg.Upstream, user))
 			p.P.ServeHTTP(w, r)
 		} else {
-			logRequest(r, "authentication failed (user=%s)")
+			logRequest(r, "authentication failed")
 
 			var realm string
 			if hostCfg.AuthRealm != "" {

@@ -7,5 +7,10 @@ import (
 
 func AuthRequest(r *http.Request, host *config.HostConfig) (string, bool) {
 	// TODO: Check if this request is authenticated
-	return "username", true
+	if username, password, ok := r.BasicAuth(); ok {
+		if username == "test" && password == "test" {
+			return username, true
+		}
+	}
+	return "", false
 }
