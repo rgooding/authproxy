@@ -1,5 +1,7 @@
 # Global options
 
+# Address to listen on
+listen_address: "0.0.0.0"
 # Ports to listen on by default. Set to 0 to disable
 http_port: 80
 https_port: 443
@@ -11,17 +13,19 @@ ldap:
   bind_dn: ""
   bind_pw: ""
 
+# Cert must contain the full chain
 tls:
   enabled: true
   cert: cert.crt
-  chain: chain.crt
   key: key.key
 
 # List of virtual hosts
 hosts:
   # Users must be in one of allow_groups or must be one of the users in allow_users
   # deny_users and deny_groups overrides allow_groups and allow_users
-  - hostname: test1.mydomain.xyz
+  - hostnames:
+    - test1.mydomain.xyz
+    - test1.otherdomain.com
     upstream: "http://localhost:4440"
     allow_groups:
       - group1
@@ -35,22 +39,6 @@ hosts:
       - denied_user1
 
   # No allow_users or allow_groups will allow all users who authenticate successfully
-  - hostname: test2.mydomain.xyz
+  - hostnames:
+    - test2.mydomain.xyz
     upstream: "http://localhost:1234"
-
-  # Override all global options
-  - hostname: test3.mydomain.xyz
-    upstream: "https://localhost:8443"
-    tls:
-      cert: cert2.crt
-      chain: chain2.crt
-      key: key2.key
-    ldap:
-      server: "ldap://ldap.localdomain.host:631"
-      bind_dn: ""
-      bind_pw: ""
-    # Override ports. If omitted or 0 then use default, if -1 then disable
-    http_port: 2080
-    https_port: 2443
-    # Redirect HTTP requests to HTTPS?
-    https_redirect: false
