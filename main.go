@@ -1,29 +1,46 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"github.com/rgooding/http-ldap-auth-proxy/config"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
 	"sync"
+
+	"github.com/rgooding/http-ldap-auth-proxy/config"
 )
 
 var cfg *config.Config
 
-func hostForRequest(req *http.Request) (*config.HostConfig, error) {
+func director(req *http.Request) {
+	var hostForReq *config.HostConfig
+
+	// Find the upstream config for this request
 	reqHost := strings.ToLower(req.Host)
 	for _, host := range cfg.Hosts {
 		for _, hostname := range host.Hostnames {
 			if reqHost == strings.ToLower(hostname) {
-				return host, nil
+				hostForReq = host
+				break
 			}
 		}
 	}
-	return nil, errors.New("no upstream configured")
+
+	if hostForReq == nil {
+		log.Printf("ERROR: no upstream configured")
+		return
+	}
+	upstreamUrl, err := url.Parse(hostForReq.Upstream)
+	if err != nil {
+		log.Printf("ERROR: Error parsing upstream URL %s : %s", hostForReq.Upstream, err.Error())
+		return
+	}
+	req.Header.Add("X-Forwarded-Host", req.Host)
+	req.Header.Add("X-Origin-Host", upstreamUrl.Host)
+	req.URL.Scheme = upstreamUrl.Scheme
+	req.URL.Host = upstreamUrl.Host
 }
 
 func main() {
@@ -31,23 +48,6 @@ func main() {
 	cfg, err = config.Load("config.yaml")
 	if err != nil {
 		log.Fatalf("Error loading config file: %s", err.Error())
-	}
-
-	director := func(req *http.Request) {
-		host, err := hostForRequest(req)
-		if err != nil {
-			log.Printf("ERROR: %s", err.Error())
-			return
-		}
-		upstream, err := url.Parse(host.Upstream)
-		if err != nil {
-			log.Printf("ERROR: Error parsing upstream URL %s : %s", host.Upstream, err.Error())
-			return
-		}
-		req.Header.Add("X-Forwarded-Host", req.Host)
-		req.Header.Add("X-Origin-Host", upstream.Host)
-		req.URL.Scheme = "http"
-		req.URL.Host = upstream.Host
 	}
 
 	proxy := &httputil.ReverseProxy{Director: director}
