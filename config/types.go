@@ -20,6 +20,7 @@ type HostConfig struct {
 	Upstream    string   `yaml:"upstream"`
 	UpstreamUrl *url.URL
 
+	AuthRealm   string   `yaml:"auth_realm"`
 	AllowGroups []string `yaml:"allow_groups"`
 	AllowUsers  []string `yaml:"allow_users"`
 	DenyGroups  []string `yaml:"deny_groups"`
@@ -32,8 +33,9 @@ type Config struct {
 	HttpsPort     int    `yaml:"https_port"`
 	HttpsRedirect bool   `yaml:"https_redirect"`
 
-	Ldap *LdapConfig `yaml:"ldap"`
-	Tls  *TlsConfig  `yaml:"tls"`
+	AuthRealm string      `yaml:"auth_realm"`
+	Ldap      *LdapConfig `yaml:"ldap"`
+	Tls       *TlsConfig  `yaml:"tls"`
 
 	Hosts []*HostConfig `yaml:"hosts"`
 }

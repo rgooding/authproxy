@@ -8,6 +8,8 @@ import (
 	"net/url"
 )
 
+const DefaultAuthRealm = "login"
+
 func Load(configFile string) (*Config, error) {
 	var config Config
 
@@ -21,6 +23,10 @@ func Load(configFile string) (*Config, error) {
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return nil, err
+	}
+
+	if config.AuthRealm == "" {
+		config.AuthRealm = DefaultAuthRealm
 	}
 
 	// Parse upstream URLs
