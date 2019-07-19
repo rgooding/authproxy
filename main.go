@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"strings"
 	"sync"
 
@@ -32,15 +31,12 @@ func director(req *http.Request) {
 		log.Printf("ERROR: no upstream configured")
 		return
 	}
-	upstreamUrl, err := url.Parse(hostForReq.Upstream)
-	if err != nil {
-		log.Printf("ERROR: Error parsing upstream URL %s : %s", hostForReq.Upstream, err.Error())
-		return
-	}
+
+	u := hostForReq.UpstreamUrl
 	req.Header.Add("X-Forwarded-Host", req.Host)
-	req.Header.Add("X-Origin-Host", upstreamUrl.Host)
-	req.URL.Scheme = upstreamUrl.Scheme
-	req.URL.Host = upstreamUrl.Host
+	req.Header.Add("X-Origin-Host", u.Host)
+	req.URL.Scheme = u.Scheme
+	req.URL.Host = u.Host
 }
 
 func main() {
@@ -58,14 +54,16 @@ func main() {
 
 	var wg sync.WaitGroup
 	if cfg.HttpPort > 0 {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
+			log.Printf("HTTP proxy listening on %s:%d", cfg.ListenAddress, cfg.HttpPort)
 			log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", cfg.ListenAddress, cfg.HttpPort), nil))
 		}()
 	}
-	if cfg.HttpPort > 0 {
+	if cfg.HttpsPort > 0 {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
+			log.Printf("HTTPS proxy listening on %s:%d", cfg.ListenAddress, cfg.HttpsPort)
 			log.Fatal(http.ListenAndServeTLS(fmt.Sprintf("%s:%d", cfg.ListenAddress, cfg.HttpsPort),
 				cfg.Tls.Cert, cfg.Tls.Key, nil))
 		}()

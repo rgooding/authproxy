@@ -1,5 +1,7 @@
 package config
 
+import "net/url"
+
 type LdapConfig struct {
 	Server string `yaml:"server"`
 	BindDn string `yaml:"bind_dn"`
@@ -14,8 +16,9 @@ type TlsConfig struct {
 }
 
 type HostConfig struct {
-	Hostnames []string `yaml:"hostnames"`
-	Upstream  string   `yaml:"upstream"`
+	Hostnames   []string `yaml:"hostnames"`
+	Upstream    string   `yaml:"upstream"`
+	UpstreamUrl *url.URL
 
 	AllowGroups []string `yaml:"allow_groups"`
 	AllowUsers  []string `yaml:"allow_users"`

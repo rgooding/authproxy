@@ -3,8 +3,9 @@
 # Address to listen on
 listen_address: "0.0.0.0"
 # Ports to listen on by default. Set to 0 to disable
-http_port: 80
-https_port: 443
+http_port: 8080
+#https_port: 8443
+https_port: 0
 # Redirect HTTP requests to HTTPS?
 https_redirect: true
 
@@ -24,9 +25,10 @@ hosts:
   # Users must be in one of allow_groups or must be one of the users in allow_users
   # deny_users and deny_groups overrides allow_groups and allow_users
   - hostnames:
-    - test1.mydomain.xyz
-    - test1.otherdomain.com
-    upstream: "http://localhost:4440"
+      - nedlinux:8080
+      - test1.mydomain.xyz
+      - test1.otherdomain.com
+    upstream: "http://chef2"
     allow_groups:
       - group1
       - group2
@@ -40,5 +42,5 @@ hosts:
 
   # No allow_users or allow_groups will allow all users who authenticate successfully
   - hostnames:
-    - test2.mydomain.xyz
+      - test2.mydomain.xyz
     upstream: "http://localhost:1234"
