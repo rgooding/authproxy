@@ -48,11 +48,9 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				logRequest(r, "ERROR: user '%s': %s", user, err.Error())
 			}
 
-			var realm string
-			if hostCfg.AuthRealm != "" {
-				realm = hostCfg.AuthRealm
-			} else {
-				realm = hostCfg.AuthRealm
+			realm := hostCfg.AuthRealm
+			if realm == "" {
+				realm = config.DefaultAuthRealm
 			}
 			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
 			http.Error(w, "Authentication failed", http.StatusUnauthorized)
