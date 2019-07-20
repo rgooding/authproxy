@@ -19,8 +19,9 @@ func main() {
 	var cfg *config.Config
 	if _, err = os.Stat(localConfigFile); err == nil {
 		cfg, err = config.Load(localConfigFile)
+	} else {
+		cfg, err = config.Load(configFile)
 	}
-	cfg, err = config.Load(configFile)
 	if err != nil {
 		log.Fatalf("Error loading config file: %s", err.Error())
 	}
