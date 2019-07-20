@@ -11,17 +11,25 @@ import (
 )
 
 type Proxy struct {
-	P   *httputil.ReverseProxy
-	cfg *config.Config
+	P    *httputil.ReverseProxy
+	cfg  *config.Config
+	auth auth.Authenticator
 }
 
-func logRequest(r *http.Request, msg string) {
-	log.Printf("%s %s%s %s", r.Method, r.Host, r.RequestURI, msg)
+func logRequest(r *http.Request, msg string, a ...interface{}) {
+	var fullMsg string
+	if len(a) > 0 {
+		fullMsg = fmt.Sprintf(msg, a...)
+	} else {
+		fullMsg = msg
+	}
+	log.Printf("%s %s%s %s", r.Method, r.Host, r.RequestURI, fullMsg)
 }
 
-func NewProxy(cfg *config.Config) *Proxy {
+func NewProxy(cfg *config.Config, a auth.Authenticator) *Proxy {
 	p := &Proxy{
-		cfg: cfg,
+		cfg:  cfg,
+		auth: a,
 	}
 	p.P = &httputil.ReverseProxy{
 		Director: p.Director,
@@ -31,12 +39,10 @@ func NewProxy(cfg *config.Config) *Proxy {
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if hostCfg, found := p.hostForRequest(r); found {
-		if user, ok := auth.AuthRequest(r, hostCfg); ok {
-			// All good, forward the request
-			logRequest(r, fmt.Sprintf("=> %s (user=%s)", hostCfg.Upstream, user))
-			p.P.ServeHTTP(w, r)
-		} else {
-			logRequest(r, "authentication failed")
+
+		user, err := p.auth.AuthRequest(r, hostCfg)
+		if err != nil {
+			logRequest(r, "authentication failed for user '%s': %s", user, err.Error())
 
 			var realm string
 			if hostCfg.AuthRealm != "" {
@@ -45,9 +51,13 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				realm = hostCfg.AuthRealm
 			}
 			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
-
 			http.Error(w, "Authentication failed", http.StatusUnauthorized)
+			return
 		}
+
+		// All good, forward the request
+		logRequest(r, "=> %s (user=%s)", hostCfg.Upstream, user)
+		p.P.ServeHTTP(w, r)
 	} else {
 		logRequest(r, "no upstream configured for request")
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)

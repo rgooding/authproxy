@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/rgooding/http-ldap-auth-proxy/auth"
 	"github.com/rgooding/http-ldap-auth-proxy/config"
 	"github.com/rgooding/http-ldap-auth-proxy/proxy"
 	"log"
@@ -16,7 +17,7 @@ func main() {
 		log.Fatalf("Error loading config file: %s", err.Error())
 	}
 
-	p := proxy.NewProxy(cfg)
+	p := proxy.NewProxy(cfg, auth.NewLdapAuthenticator(cfg))
 
 	var wg sync.WaitGroup
 	if cfg.HttpPort > 0 {
