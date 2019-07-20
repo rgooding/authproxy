@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"github.com/rgooding/http-ldap-auth-proxy/config"
-	"github.com/rgooding/http-ldap-auth-proxy/ldap"
+	"github.com/rgooding/authproxy/config"
+	"github.com/rgooding/authproxy/ldap"
 	"net/http"
 	"time"
 )

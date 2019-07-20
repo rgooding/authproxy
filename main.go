@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/rgooding/http-ldap-auth-proxy/auth"
-	"github.com/rgooding/http-ldap-auth-proxy/config"
-	"github.com/rgooding/http-ldap-auth-proxy/proxy"
+	"github.com/rgooding/authproxy/auth"
+	"github.com/rgooding/authproxy/config"
+	"github.com/rgooding/authproxy/proxy"
 	"log"
 	"net/http"
 	"os"

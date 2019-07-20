@@ -1,4 +1,4 @@
-module github.com/rgooding/http-ldap-auth-proxy
+module github.com/rgooding/authproxy
 
 go 1.12
 

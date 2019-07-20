@@ -2,7 +2,7 @@ package auth
 
 import (
 	"errors"
-	"github.com/rgooding/http-ldap-auth-proxy/config"
+	"github.com/rgooding/authproxy/config"
 	"net/http"
 )
 
