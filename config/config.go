@@ -25,8 +25,15 @@ func Load(configFile string) (*Config, error) {
 		return nil, err
 	}
 
+	// Set default values
 	if config.AuthRealm == "" {
 		config.AuthRealm = DefaultAuthRealm
+	}
+	if config.Ldap.UserFilter == "" {
+		config.Ldap.UserFilter = "(uid=%s)"
+	}
+	if config.Ldap.GroupFilter == "" {
+		config.Ldap.GroupFilter = "(memberUid=%s)"
 	}
 
 	// Parse upstream URLs
@@ -37,8 +44,6 @@ func Load(configFile string) (*Config, error) {
 		}
 		host.UpstreamUrl = u
 	}
-
-	// TODO: Validate the config
 
 	return &config, nil
 }
