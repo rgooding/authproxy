@@ -7,12 +7,20 @@ import (
 	"github.com/rgooding/http-ldap-auth-proxy/proxy"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 )
 
+const configFile = "config.yaml"
+const localConfigFile = "config.local.yaml"
+
 func main() {
 	var err error
-	cfg, err := config.Load("config.yaml")
+	var cfg *config.Config
+	if _, err = os.Stat(localConfigFile); err == nil {
+		cfg, err = config.Load(localConfigFile)
+	}
+	cfg, err = config.Load(configFile)
 	if err != nil {
 		log.Fatalf("Error loading config file: %s", err.Error())
 	}

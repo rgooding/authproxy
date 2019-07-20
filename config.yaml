@@ -15,8 +15,8 @@ ldap:
   ssl: true
   starttls: false
   base: "dc=example,dc=com"
-  bind_dn: ""
-  bind_pw: ""
+  bind_dn: "cn=admin,dc=example,dc=com"
+  bind_pw: "admin_passwd"
   # Override the default user filter of "(uid=%s)"
   #user_filter: ""
   # Override the default group filter of "(memberUid=%s)"
