@@ -10,9 +10,17 @@ https_port: 0
 https_redirect: true
 
 ldap:
-  server: "ldaps://ldap.jumpcloud.com:631"
+  host: "ldap.example.com"
+  port: 636
+  ssl: true
+  starttls: false
+  base: "dc=example,dc=com"
   bind_dn: ""
   bind_pw: ""
+  # Override the default user filter of "(uid=%s)"
+  user_filter: ""
+  # Override the default group filter of "(memberUid=%s)"
+  group_filter: ""
 
 # Cert must contain the full chain
 tls:

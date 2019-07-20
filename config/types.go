@@ -3,9 +3,15 @@ package config
 import "net/url"
 
 type LdapConfig struct {
-	Server string `yaml:"server"`
-	BindDn string `yaml:"bind_dn"`
-	BindPw string `yaml:"bind_pw"`
+	Host        string `yaml:"host"`
+	Port        int    `yaml:"port"`
+	SSL         bool   `yaml:"ssl"`
+	StartTLS    bool   `yaml:"starttls"`
+	Base        string `yaml:"base"`
+	BindDn      string `yaml:"bind_dn"`
+	BindPw      string `yaml:"bind_pw"`
+	UserFilter  string `yaml:"user_filter"`
+	GroupFilter string `yaml:"group_filter"`
 }
 
 type TlsConfig struct {
