@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"github.com/jtblin/go-ldap-client"
 	"github.com/rgooding/http-ldap-auth-proxy/config"
+	"github.com/rgooding/http-ldap-auth-proxy/ldap"
 	"net/http"
 	"time"
 )
@@ -32,7 +32,7 @@ func NewLdapAuthenticator(cfg *config.Config) *LdapAuthenticator {
 func (a *LdapAuthenticator) AuthRequest(r *http.Request, host *config.HostConfig) (string, error) {
 	if username, password, ok := r.BasicAuth(); ok {
 		// Authenticate the user
-		if ! a.cache.CheckCreds(username, password) {
+		if !a.cache.CheckCreds(username, password) {
 			// Cached auth failed, try LDAP
 			ok, _, err := a.client.Authenticate(username, password)
 			if !ok || err != nil {
