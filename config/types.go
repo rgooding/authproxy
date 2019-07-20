@@ -27,6 +27,7 @@ type HostConfig struct {
 	UpstreamUrl *url.URL
 
 	AuthRealm   string   `yaml:"auth_realm"`
+	AllowAll    bool     `yaml:"allow_all"`
 	AllowGroups []string `yaml:"allow_groups"`
 	AllowUsers  []string `yaml:"allow_users"`
 	DenyGroups  []string `yaml:"deny_groups"`

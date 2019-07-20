@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"github.com/jtblin/go-ldap-client"
 	"github.com/rgooding/http-ldap-auth-proxy/config"
 	"net/http"
@@ -35,6 +36,41 @@ func (a *LdapAuthenticator) AuthRequest(r *http.Request, host *config.HostConfig
 			}
 			return username, err
 		}
+
+		// User authenticated successfully. Are they allowed access?
+		allowed := host.AllowAll
+		// Check if the user is in the list of allowed users
+		if !allowed {
+			for _, user := range host.AllowUsers {
+				if user == username {
+					allowed = true
+					break
+				}
+			}
+		}
+		// Check if the user is in one of the allowed groups
+		if !allowed && len(host.AllowGroups) > 0 {
+			groups, err := a.client.GetGroupsOfUser(username)
+			if err != nil {
+				return username, err
+			}
+			// Put groups in a map to speed up the check
+			groupMap := make(map[string]bool)
+			for _, g := range groups {
+				groupMap[g] = true
+			}
+			for _, ag := range host.AllowGroups {
+				if _, ok := groupMap[ag]; ok {
+					allowed = true
+					break
+				}
+			}
+		}
+
+		if !allowed {
+			return username, errors.New("access denied by configuration")
+		}
+
 		return username, nil
 	}
 	return "", ErrNoAuth

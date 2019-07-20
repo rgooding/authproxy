@@ -23,7 +23,7 @@ func logRequest(r *http.Request, msg string, a ...interface{}) {
 	} else {
 		fullMsg = msg
 	}
-	log.Printf("%s %s%s %s", r.Method, r.Host, r.RequestURI, fullMsg)
+	log.Printf("%s %s %s%s %s", r.RemoteAddr, r.Method, r.Host, r.RequestURI, fullMsg)
 }
 
 func NewProxy(cfg *config.Config, a auth.Authenticator) *Proxy {
@@ -42,7 +42,11 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		user, err := p.auth.AuthRequest(r, hostCfg)
 		if err != nil {
-			logRequest(r, "authentication failed for user '%s': %s", user, err.Error())
+			if err == auth.ErrNoAuth{
+				logRequest(r, err.Error())
+			} else {
+				logRequest(r, "ERROR: user '%s': %s", user, err.Error())
+			}
 
 			var realm string
 			if hostCfg.AuthRealm != "" {

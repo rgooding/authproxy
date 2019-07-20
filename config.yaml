@@ -18,13 +18,12 @@ ldap:
   bind_dn: ""
   bind_pw: ""
   # Override the default user filter of "(uid=%s)"
-  user_filter: ""
+  #user_filter: ""
   # Override the default group filter of "(memberUid=%s)"
-  group_filter: ""
+  #group_filter: ""
 
 # Cert must contain the full chain
 tls:
-  enabled: true
   cert: cert.crt
   key: key.key
 
@@ -48,7 +47,9 @@ hosts:
     deny_users:
       - denied_user1
 
-  # No allow_users or allow_groups will allow all users who authenticate successfully
+  # Example allowing all users who authenticate successfully
   - hostnames:
       - test2.mydomain.xyz
     upstream: "http://localhost:1234"
+    # Allow all users without checking username or group membership
+    allow_all: true
