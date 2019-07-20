@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"gopkg.in/ldap.v2"
 )
@@ -28,13 +29,12 @@ type LDAPClient struct {
 	UseSSL             bool
 	SkipTLS            bool
 	ClientCertificates []tls.Certificate // Adding client certificates
+	CallAttempts       int
 	mu                 sync.Mutex
 }
 
-// Connect connects to the ldap backend.
-func (lc *LDAPClient) Connect() error {
-	lc.mu.Lock()
-	defer lc.mu.Unlock()
+// connect connects to the ldap backend.
+func (lc *LDAPClient) connect() error {
 	if lc.Conn == nil {
 		var l *ldap.Conn
 		var err error
@@ -75,24 +75,67 @@ func (lc *LDAPClient) Connect() error {
 func (lc *LDAPClient) Close() {
 	lc.mu.Lock()
 	defer lc.mu.Unlock()
+	lc.close()
+}
+
+func (lc *LDAPClient) close() {
 	if lc.Conn != nil {
 		lc.Conn.Close()
 		lc.Conn = nil
 	}
 }
 
+func (lc *LDAPClient) reconnectIfNetworkError(err error, attempt int) bool {
+	if lErr, ok := err.(*ldap.Error); ok && lErr.ResultCode == ldap.ErrorNetwork {
+		// disconnect for the next attempt
+		lc.close()
+		// exponential backoff
+		time.Sleep(time.Duration(attempt) * 50 * time.Millisecond)
+		return true
+	}
+	return false
+}
+
+func (lc *LDAPClient) bindWithRetries(bindDN, bindPassword string) error {
+	var err error
+	for i := 1; i <= lc.CallAttempts; i++ {
+		err = lc.connect()
+		if err == nil {
+			err = lc.Conn.Bind(lc.BindDN, lc.BindPassword)
+		}
+		// Check for network errors and reconnect
+		if !lc.reconnectIfNetworkError(err, i) {
+			return err
+		}
+	}
+	return err
+}
+
+func (lc *LDAPClient) searchWithRetries(searchRequest *ldap.SearchRequest) (*ldap.SearchResult, error) {
+	var err error
+	for i := 1; i <= lc.CallAttempts; i++ {
+		var sr *ldap.SearchResult
+		err = lc.connect()
+		if err == nil {
+			sr, err = lc.Conn.Search(searchRequest)
+		}
+
+		// Check for network errors and reconnect
+		if !lc.reconnectIfNetworkError(err, i) {
+			return sr, err
+		}
+	}
+	return nil, err
+}
+
 // Authenticate authenticates the user against the ldap backend.
 func (lc *LDAPClient) Authenticate(username, password string) (bool, map[string]string, error) {
-	err := lc.Connect()
-	if err != nil {
-		return false, nil, err
-	}
 	lc.mu.Lock()
 	defer lc.mu.Unlock()
 
 	// First bind with a read only user
 	if lc.BindDN != "" && lc.BindPassword != "" {
-		err := lc.Conn.Bind(lc.BindDN, lc.BindPassword)
+		err := lc.bindWithRetries(lc.BindDN, lc.BindPassword)
 		if err != nil {
 			return false, nil, err
 		}
@@ -108,17 +151,17 @@ func (lc *LDAPClient) Authenticate(username, password string) (bool, map[string]
 		nil,
 	)
 
-	sr, err := lc.Conn.Search(searchRequest)
+	sr, err := lc.searchWithRetries(searchRequest)
 	if err != nil {
 		return false, nil, err
 	}
 
 	if len(sr.Entries) < 1 {
-		return false, nil, errors.New("User does not exist")
+		return false, nil, errors.New("user does not exist")
 	}
 
 	if len(sr.Entries) > 1 {
-		return false, nil, errors.New("Too many entries returned")
+		return false, nil, errors.New("too many entries returned")
 	}
 
 	userDN := sr.Entries[0].DN
@@ -128,14 +171,14 @@ func (lc *LDAPClient) Authenticate(username, password string) (bool, map[string]
 	}
 
 	// Bind as the user to verify their password
-	err = lc.Conn.Bind(userDN, password)
+	err = lc.bindWithRetries(userDN, password)
 	if err != nil {
 		return false, user, err
 	}
 
 	// Rebind as the read only user for any further queries
 	if lc.BindDN != "" && lc.BindPassword != "" {
-		err = lc.Conn.Bind(lc.BindDN, lc.BindPassword)
+		err = lc.bindWithRetries(lc.BindDN, lc.BindPassword)
 		if err != nil {
 			return true, user, err
 		}
@@ -146,10 +189,6 @@ func (lc *LDAPClient) Authenticate(username, password string) (bool, map[string]
 
 // GetGroupsOfUser returns the group for a user.
 func (lc *LDAPClient) GetGroupsOfUser(username string) ([]string, error) {
-	err := lc.Connect()
-	if err != nil {
-		return nil, err
-	}
 	lc.mu.Lock()
 	defer lc.mu.Unlock()
 
@@ -160,11 +199,11 @@ func (lc *LDAPClient) GetGroupsOfUser(username string) ([]string, error) {
 		[]string{"cn"}, // can it be something else than "cn"?
 		nil,
 	)
-	sr, err := lc.Conn.Search(searchRequest)
+	sr, err := lc.searchWithRetries(searchRequest)
 	if err != nil {
 		return nil, err
 	}
-	groups := []string{}
+	var groups []string
 	for _, entry := range sr.Entries {
 		groups = append(groups, entry.GetAttributeValue("cn"))
 	}

@@ -35,6 +35,9 @@ func Load(configFile string) (*Config, error) {
 	if config.Ldap.GroupFilter == "" {
 		config.Ldap.GroupFilter = "(memberUid=%s)"
 	}
+	if config.Ldap.CallAttempts < 1 {
+		config.Ldap.CallAttempts = 1
+	}
 
 	// Parse upstream URLs
 	for _, host := range config.Hosts {

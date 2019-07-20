@@ -13,6 +13,7 @@ type LdapConfig struct {
 	UserFilter   string `yaml:"user_filter"`
 	GroupFilter  string `yaml:"group_filter"`
 	CacheSeconds int    `yaml:"cache_seconds"`
+	CallAttempts int    `yaml:"call_attempts"`
 }
 
 type TlsConfig struct {

@@ -17,6 +17,7 @@ func NewLdapAuthenticator(cfg *config.Config) *LdapAuthenticator {
 		client: &ldap.LDAPClient{
 			Base:         cfg.Ldap.Base,
 			Host:         cfg.Ldap.Host,
+			ServerName:   cfg.Ldap.Host,
 			Port:         cfg.Ldap.Port,
 			UseSSL:       cfg.Ldap.SSL,
 			SkipTLS:      !cfg.Ldap.StartTLS,
@@ -24,6 +25,7 @@ func NewLdapAuthenticator(cfg *config.Config) *LdapAuthenticator {
 			BindPassword: cfg.Ldap.BindPw,
 			UserFilter:   cfg.Ldap.UserFilter,
 			GroupFilter:  cfg.Ldap.GroupFilter,
+			CallAttempts: cfg.Ldap.CallAttempts,
 		},
 		cache: NewCache(time.Duration(cfg.Ldap.CacheSeconds) * time.Second),
 	}

@@ -14,6 +14,8 @@ ldap:
   port: 636
   ssl: true
   starttls: false
+  # How many times to attempt LDAP operations before giving up
+  call_attempts: 5
   base: "dc=example,dc=com"
   bind_dn: "cn=admin,dc=example,dc=com"
   bind_pw: "admin_passwd"
