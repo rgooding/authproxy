@@ -42,7 +42,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		user, err := p.auth.AuthRequest(r, hostCfg)
 		if err != nil {
-			if err == auth.ErrNoAuth{
+			if err == auth.ErrNoAuth {
 				logRequest(r, err.Error())
 			} else {
 				logRequest(r, "ERROR: user '%s': %s", user, err.Error())
