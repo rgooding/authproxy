@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"github.com/jtblin/go-ldap-client"
 	"github.com/rgooding/http-ldap-auth-proxy/config"
 	"net/http"
@@ -38,8 +37,37 @@ func (a *LdapAuthenticator) AuthRequest(r *http.Request, host *config.HostConfig
 		}
 
 		// User authenticated successfully. Are they allowed access?
+
+		// Get user groups from LDAP if required
+		groupMap := make(map[string]bool)
+		if len(host.AllowGroups) > 0 || len(host.DenyGroups) > 0 {
+			userGroups, err := a.client.GetGroupsOfUser(username)
+			if err != nil {
+				return username, err
+			}
+			// Put groups in a map to speed up the check
+			for _, g := range userGroups {
+				groupMap[g] = true
+			}
+		}
+
+		// Check DenyUsers first
+		for _, user := range host.DenyUsers {
+			if username == user {
+				return username, ErrAccessDenied
+			}
+		}
+
+		// Check DenyGroups
+		for _, dg := range host.DenyGroups {
+			if _, ok := groupMap[dg]; ok {
+				return username, ErrAccessDenied
+			}
+		}
+
+		// Check Allow rules
 		allowed := host.AllowAll
-		// Check if the user is in the list of allowed users
+		// Check AllowUsers
 		if !allowed {
 			for _, user := range host.AllowUsers {
 				if user == username {
@@ -48,17 +76,9 @@ func (a *LdapAuthenticator) AuthRequest(r *http.Request, host *config.HostConfig
 				}
 			}
 		}
-		// Check if the user is in one of the allowed groups
+
+		// Check AllowGroups
 		if !allowed && len(host.AllowGroups) > 0 {
-			groups, err := a.client.GetGroupsOfUser(username)
-			if err != nil {
-				return username, err
-			}
-			// Put groups in a map to speed up the check
-			groupMap := make(map[string]bool)
-			for _, g := range groups {
-				groupMap[g] = true
-			}
 			for _, ag := range host.AllowGroups {
 				if _, ok := groupMap[ag]; ok {
 					allowed = true
@@ -68,7 +88,7 @@ func (a *LdapAuthenticator) AuthRequest(r *http.Request, host *config.HostConfig
 		}
 
 		if !allowed {
-			return username, errors.New("access denied by configuration")
+			return username, ErrAccessDenied
 		}
 
 		return username, nil
