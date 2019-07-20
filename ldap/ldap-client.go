@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"sync"
 
 	"gopkg.in/ldap.v2"
 )
@@ -27,10 +28,13 @@ type LDAPClient struct {
 	UseSSL             bool
 	SkipTLS            bool
 	ClientCertificates []tls.Certificate // Adding client certificates
+	mu                 sync.Mutex
 }
 
 // Connect connects to the ldap backend.
 func (lc *LDAPClient) Connect() error {
+	lc.mu.Lock()
+	defer lc.mu.Unlock()
 	if lc.Conn == nil {
 		var l *ldap.Conn
 		var err error
@@ -69,6 +73,8 @@ func (lc *LDAPClient) Connect() error {
 
 // Close closes the ldap backend connection.
 func (lc *LDAPClient) Close() {
+	lc.mu.Lock()
+	defer lc.mu.Unlock()
 	if lc.Conn != nil {
 		lc.Conn.Close()
 		lc.Conn = nil
@@ -81,6 +87,8 @@ func (lc *LDAPClient) Authenticate(username, password string) (bool, map[string]
 	if err != nil {
 		return false, nil, err
 	}
+	lc.mu.Lock()
+	defer lc.mu.Unlock()
 
 	// First bind with a read only user
 	if lc.BindDN != "" && lc.BindPassword != "" {
@@ -142,6 +150,8 @@ func (lc *LDAPClient) GetGroupsOfUser(username string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	lc.mu.Lock()
+	defer lc.mu.Unlock()
 
 	searchRequest := ldap.NewSearchRequest(
 		lc.Base,
