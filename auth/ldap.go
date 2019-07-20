@@ -20,7 +20,7 @@ func NewLdapAuthenticator(cfg *config.Config) *LdapAuthenticator {
 			ServerName:   cfg.Ldap.Host,
 			Port:         cfg.Ldap.Port,
 			UseSSL:       cfg.Ldap.SSL,
-			SkipTLS:      !cfg.Ldap.StartTLS,
+			StartTLS:     cfg.Ldap.StartTLS,
 			BindDN:       cfg.Ldap.BindDn,
 			BindPassword: cfg.Ldap.BindPw,
 			UserFilter:   cfg.Ldap.UserFilter,

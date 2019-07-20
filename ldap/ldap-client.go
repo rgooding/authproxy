@@ -27,7 +27,7 @@ type LDAPClient struct {
 	Port               int
 	InsecureSkipVerify bool
 	UseSSL             bool
-	SkipTLS            bool
+	StartTLS           bool
 	ClientCertificates []tls.Certificate // Adding client certificates
 	CallAttempts       int
 	mu                 sync.Mutex
@@ -39,30 +39,31 @@ func (lc *LDAPClient) connect() error {
 		var l *ldap.Conn
 		var err error
 		address := fmt.Sprintf("%s:%d", lc.Host, lc.Port)
-		if !lc.UseSSL {
-			l, err = ldap.Dial("tcp", address)
-			if err != nil {
-				return err
-			}
+		config := &tls.Config{
+			InsecureSkipVerify: lc.InsecureSkipVerify,
+			ServerName:         lc.ServerName,
+		}
 
-			// Reconnect with TLS
-			if !lc.SkipTLS {
-				err = l.StartTLS(&tls.Config{InsecureSkipVerify: true})
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			config := &tls.Config{
-				InsecureSkipVerify: lc.InsecureSkipVerify,
-				ServerName:         lc.ServerName,
-			}
+		if lc.UseSSL {
 			if lc.ClientCertificates != nil && len(lc.ClientCertificates) > 0 {
 				config.Certificates = lc.ClientCertificates
 			}
 			l, err = ldap.DialTLS("tcp", address, config)
 			if err != nil {
 				return err
+			}
+		} else {
+			l, err = ldap.Dial("tcp", address)
+			if err != nil {
+				return err
+			}
+
+			// Reconnect with TLS
+			if lc.StartTLS {
+				err = l.StartTLS(config)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
