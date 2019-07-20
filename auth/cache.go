@@ -48,10 +48,8 @@ func (c *Cache) CheckCreds(username, password string) bool {
 		if exp.Before(time.Now()) {
 			return false
 		}
-		if h, ok := c.creds[username]; ok {
-			if h == md5.Sum([]byte(password)) {
-				return true
-			}
+		if h, ok := c.creds[username]; ok && h == md5.Sum([]byte(password)) {
+			return true
 		}
 	}
 	return false
