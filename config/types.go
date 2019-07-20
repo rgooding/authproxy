@@ -3,15 +3,16 @@ package config
 import "net/url"
 
 type LdapConfig struct {
-	Host        string `yaml:"host"`
-	Port        int    `yaml:"port"`
-	SSL         bool   `yaml:"ssl"`
-	StartTLS    bool   `yaml:"starttls"`
-	Base        string `yaml:"base"`
-	BindDn      string `yaml:"bind_dn"`
-	BindPw      string `yaml:"bind_pw"`
-	UserFilter  string `yaml:"user_filter"`
-	GroupFilter string `yaml:"group_filter"`
+	Host         string `yaml:"host"`
+	Port         int    `yaml:"port"`
+	SSL          bool   `yaml:"ssl"`
+	StartTLS     bool   `yaml:"starttls"`
+	Base         string `yaml:"base"`
+	BindDn       string `yaml:"bind_dn"`
+	BindPw       string `yaml:"bind_pw"`
+	UserFilter   string `yaml:"user_filter"`
+	GroupFilter  string `yaml:"group_filter"`
+	CacheSeconds int    `yaml:"cache_seconds"`
 }
 
 type TlsConfig struct {

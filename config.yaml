@@ -21,6 +21,8 @@ ldap:
   #user_filter: ""
   # Override the default group filter of "(memberUid=%s)"
   #group_filter: ""
+  # How long in seconds to cache user credentials and groups
+  cache_seconds: 60
 
 # Cert must contain the full chain
 tls:
