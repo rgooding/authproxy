@@ -36,7 +36,6 @@ hosts:
   # Users must be in one of allow_groups or must be one of the users in allow_users
   # deny_users and deny_groups overrides allow_groups and allow_users
   - hostnames:
-      - nedlinux:8080
       - test1.mydomain.xyz
       - test1.otherdomain.com
     upstream: "http://chef2"
