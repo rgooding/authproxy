@@ -23,7 +23,14 @@ func logRequest(r *http.Request, msg string, a ...interface{}) {
 	} else {
 		fullMsg = msg
 	}
-	log.Printf("%s %s %s%s %s", r.RemoteAddr, r.Method, r.Host, r.RequestURI, fullMsg)
+
+	var scheme string
+	if r.TLS == nil {
+		scheme = "http"
+	} else {
+		scheme = "https"
+	}
+	log.Printf("%s %s %s://%s%s %s", r.RemoteAddr, r.Method, scheme, r.Host, r.RequestURI, fullMsg)
 }
 
 func NewProxy(cfg *config.Config, a auth.Authenticator) *Proxy {
