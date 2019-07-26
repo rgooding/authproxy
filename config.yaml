@@ -9,22 +9,37 @@ https_port: 0
 # Redirect HTTP requests to HTTPS?
 https_redirect: true
 
-ldap:
-  host: "ldap.example.com"
-  port: 636
-  ssl: true
-  starttls: false
-  # How many times to attempt LDAP operations before giving up
-  call_attempts: 5
-  base: "dc=example,dc=com"
-  bind_dn: "cn=admin,dc=example,dc=com"
-  bind_pw: "admin_passwd"
-  # Override the default user filter of "(uid=%s)"
-  #user_filter: ""
-  # Override the default group filter of "(memberUid=%s)"
-  #group_filter: ""
-  # How long in seconds to cache user credentials and groups
-  cache_seconds: 60
+# Internal users. This list will be consulted before LDAP
+internal_users:
+  - username: user1
+    password: password1
+    groups:
+      - group1
+      - group2
+  - username: user2
+    password: password2
+    groups:
+      - group2
+      - group3
+
+# LDAP servers will be attempted in order
+ldap_servers:
+  - host: "ldap.example.com"
+    port: 636
+    ssl: true
+    starttls: false
+    # How many times to attempt LDAP operations before giving up
+    call_attempts: 5
+    base: "dc=example,dc=com"
+    bind_dn: "cn=admin,dc=example,dc=com"
+    bind_pw: "admin_passwd"
+    # Override the default user filter of "(uid=%s)"
+    #user_filter: ""
+    # Override the default group filter of "(memberUid=%s)"
+    # For JumpCloud use "(member=uid=%s,BASE_DN)", replacing BASE_DN with your base DN
+    #group_filter: ""
+    # How long in seconds to cache user credentials and groups
+    cache_seconds: 60
 
 # Cert must contain the full chain
 tls:
@@ -38,7 +53,7 @@ hosts:
   - hostnames:
       - test1.mydomain.xyz
       - test1.otherdomain.com
-    upstream: "http://chef2"
+    upstream: "http://127.0.0.1:4000"
     allow_groups:
       - group1
       - group2

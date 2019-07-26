@@ -12,22 +12,22 @@ type LdapAuthenticator struct {
 	cache  *Cache
 }
 
-func NewLdapAuthenticator(cfg *config.Config) *LdapAuthenticator {
+func NewLdapAuthenticator(cfg *config.LdapConfig) *LdapAuthenticator {
 	return &LdapAuthenticator{
 		client: &ldap.LDAPClient{
-			Base:         cfg.Ldap.Base,
-			Host:         cfg.Ldap.Host,
-			ServerName:   cfg.Ldap.Host,
-			Port:         cfg.Ldap.Port,
-			UseSSL:       cfg.Ldap.SSL,
-			StartTLS:     cfg.Ldap.StartTLS,
-			BindDN:       cfg.Ldap.BindDn,
-			BindPassword: cfg.Ldap.BindPw,
-			UserFilter:   cfg.Ldap.UserFilter,
-			GroupFilter:  cfg.Ldap.GroupFilter,
-			CallAttempts: cfg.Ldap.CallAttempts,
+			Base:         cfg.Base,
+			Host:         cfg.Host,
+			ServerName:   cfg.Host,
+			Port:         cfg.Port,
+			UseSSL:       cfg.SSL,
+			StartTLS:     cfg.StartTLS,
+			BindDN:       cfg.BindDn,
+			BindPassword: cfg.BindPw,
+			UserFilter:   cfg.UserFilter,
+			GroupFilter:  cfg.GroupFilter,
+			CallAttempts: cfg.CallAttempts,
 		},
-		cache: NewCache(time.Duration(cfg.Ldap.CacheSeconds) * time.Second),
+		cache: NewCache(time.Duration(cfg.CacheSeconds) * time.Second),
 	}
 }
 

@@ -29,14 +29,17 @@ func Load(configFile string) (*Config, error) {
 	if config.AuthRealm == "" {
 		config.AuthRealm = DefaultAuthRealm
 	}
-	if config.Ldap.UserFilter == "" {
-		config.Ldap.UserFilter = "(uid=%s)"
-	}
-	if config.Ldap.GroupFilter == "" {
-		config.Ldap.GroupFilter = "(memberUid=%s)"
-	}
-	if config.Ldap.CallAttempts < 1 {
-		config.Ldap.CallAttempts = 1
+
+	for _, c := range config.LdapServers {
+		if c.UserFilter == "" {
+			c.UserFilter = "(uid=%s)"
+		}
+		if c.GroupFilter == "" {
+			c.GroupFilter = "(memberUid=%s)"
+		}
+		if c.CallAttempts < 1 {
+			c.CallAttempts = 1
+		}
 	}
 
 	// Parse upstream URLs

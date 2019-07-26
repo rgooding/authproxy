@@ -2,6 +2,12 @@ package config
 
 import "net/url"
 
+type InternalUser struct {
+	Username string   `yaml:"username"`
+	Password string   `yaml:"password"`
+	Groups   []string `yaml:"groups"`
+}
+
 type LdapConfig struct {
 	Host         string `yaml:"host"`
 	Port         int    `yaml:"port"`
@@ -42,9 +48,10 @@ type Config struct {
 	HttpsPort     int    `yaml:"https_port"`
 	HttpsRedirect bool   `yaml:"https_redirect"`
 
-	AuthRealm string      `yaml:"auth_realm"`
-	Ldap      *LdapConfig `yaml:"ldap"`
-	Tls       *TlsConfig  `yaml:"tls"`
+	AuthRealm     string          `yaml:"auth_realm"`
+	LdapServers   []*LdapConfig   `yaml:"ldap_servers"`
+	InternalUsers []*InternalUser `yaml:"internal_users"`
+	Tls           TlsConfig       `yaml:"tls"`
 
 	Hosts []*HostConfig `yaml:"hosts"`
 }

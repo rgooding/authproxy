@@ -11,9 +11,9 @@ import (
 )
 
 type Proxy struct {
-	P    *httputil.ReverseProxy
-	cfg  *config.Config
-	auth auth.Authenticator
+	P              *httputil.ReverseProxy
+	cfg            *config.Config
+	authenticators []auth.Authenticator
 }
 
 func logRequest(r *http.Request, msg string, a ...interface{}) {
@@ -33,10 +33,17 @@ func logRequest(r *http.Request, msg string, a ...interface{}) {
 	log.Printf("%s %s %s://%s%s %s", r.RemoteAddr, r.Method, scheme, r.Host, r.RequestURI, fullMsg)
 }
 
-func NewProxy(cfg *config.Config, a auth.Authenticator) *Proxy {
+func NewProxy(cfg *config.Config) *Proxy {
+	auths := []auth.Authenticator{
+		auth.NewInternalAuthenticator(cfg.InternalUsers),
+	}
+	for _, lc := range cfg.LdapServers {
+		auths = append(auths, auth.NewLdapAuthenticator(lc))
+	}
+
 	p := &Proxy{
-		cfg:  cfg,
-		auth: a,
+		cfg:            cfg,
+		authenticators: auths,
 	}
 	p.P = &httputil.ReverseProxy{
 		Director: p.Director,
@@ -44,10 +51,20 @@ func NewProxy(cfg *config.Config, a auth.Authenticator) *Proxy {
 	return p
 }
 
+func (p *Proxy) authRequest(r *http.Request, hostCfg *config.HostConfig) (string, error) {
+	for _, a := range p.authenticators {
+		username, err := a.AuthRequest(r, hostCfg)
+		if username != "" && err == nil {
+			return username, err
+		}
+	}
+	return "", auth.ErrAuthFailed
+}
+
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if hostCfg, found := p.hostForRequest(r); found {
 
-		user, err := p.auth.AuthRequest(r, hostCfg)
+		user, err := p.authRequest(r, hostCfg)
 		if err != nil {
 			if err == auth.ErrNoAuth {
 				logRequest(r, err.Error())
@@ -57,7 +74,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			realm := hostCfg.AuthRealm
 			if realm == "" {
-				realm = config.DefaultAuthRealm
+				realm = p.cfg.AuthRealm
 			}
 			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
 			http.Error(w, "Authentication failed", http.StatusUnauthorized)
