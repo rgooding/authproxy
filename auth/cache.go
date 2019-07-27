@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/md5"
+	"github.com/rgooding/authproxy/types"
 	"sync"
 	"time"
 )
@@ -10,7 +11,7 @@ type Cache struct {
 	ttl       time.Duration
 	creds     map[string][16]byte
 	credsExp  map[string]time.Time
-	groups    map[string]map[string]bool
+	groups    map[string]*types.StringSet
 	groupsExp map[string]time.Time
 	mu        sync.RWMutex
 }
@@ -20,7 +21,7 @@ func NewCache(ttl time.Duration) *Cache {
 		ttl:       ttl,
 		creds:     make(map[string][16]byte),
 		credsExp:  make(map[string]time.Time),
-		groups:    make(map[string]map[string]bool),
+		groups:    make(map[string]*types.StringSet),
 		groupsExp: make(map[string]time.Time),
 	}
 }
@@ -55,14 +56,14 @@ func (c *Cache) CheckCreds(username, password string) bool {
 	return false
 }
 
-func (c *Cache) AddGroups(username string, groupMap map[string]bool) {
+func (c *Cache) AddGroups(username string, groups *types.StringSet) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.groups[username] = groupMap
+	c.groups[username] = groups
 	c.groupsExp[username] = time.Now().Add(c.ttl)
 }
 
-func (c *Cache) GetGroups(username string) (map[string]bool, bool) {
+func (c *Cache) GetGroups(username string) (*types.StringSet, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	if exp, ok := c.groupsExp[username]; ok {

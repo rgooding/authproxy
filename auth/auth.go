@@ -2,16 +2,16 @@ package auth
 
 import (
 	"errors"
-	"github.com/rgooding/authproxy/config"
-	"net/http"
+	"github.com/rgooding/authproxy/types"
 )
 
 var ErrNoAuth = errors.New("invalid or missing credentials")
 var ErrUnknown = errors.New("unknown error")
 var ErrAccessDenied = errors.New("access denied by configuration")
+var ErrUserNotFound = errors.New("user not found")
 var ErrBadPassword = errors.New("incorrect username or password")
-var ErrAuthFailed = errors.New("authentication failed")
 
 type Authenticator interface {
-	AuthRequest(r *http.Request, host *config.HostConfig) (string, error)
+	CheckPassword(username, password string) (bool, error)
+	GetGroups(username string) (*types.StringSet, error)
 }

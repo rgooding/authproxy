@@ -49,6 +49,10 @@ func Load(configFile string) (*Config, error) {
 			return nil, fmt.Errorf("error parsing upstream URL %s : %s", host.Upstream, err.Error())
 		}
 		host.UpstreamUrl = u
+
+		if host.AuthRealm == "" {
+			host.AuthRealm = config.AuthRealm
+		}
 	}
 
 	return &config, nil

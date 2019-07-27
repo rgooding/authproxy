@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/rgooding/authproxy/auth"
 	"github.com/rgooding/authproxy/config"
+	"github.com/rgooding/authproxy/types"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -51,38 +52,30 @@ func NewProxy(cfg *config.Config) *Proxy {
 	return p
 }
 
-func (p *Proxy) authRequest(r *http.Request, hostCfg *config.HostConfig) (string, error) {
-	for _, a := range p.authenticators {
-		username, err := a.AuthRequest(r, hostCfg)
-		if username != "" && err == nil {
-			return username, err
-		}
-	}
-	return "", auth.ErrAuthFailed
-}
-
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if hostCfg, found := p.hostForRequest(r); found {
+		username, password, ok := r.BasicAuth()
+		if !ok {
+			logRequest(r, "invalid or missing credentials")
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+hostCfg.AuthRealm+`"`)
+			http.Error(w, "Authentication failed", http.StatusUnauthorized)
+			return
+		}
 
-		user, err := p.authRequest(r, hostCfg)
+		ok, err := p.authRequest(username, password, hostCfg)
 		if err != nil {
 			if err == auth.ErrNoAuth {
 				logRequest(r, err.Error())
 			} else {
-				logRequest(r, "ERROR: user '%s': %s", user, err.Error())
+				logRequest(r, "ERROR: user '%s': %s", username, err.Error())
 			}
-
-			realm := hostCfg.AuthRealm
-			if realm == "" {
-				realm = p.cfg.AuthRealm
-			}
-			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+hostCfg.AuthRealm+`"`)
 			http.Error(w, "Authentication failed", http.StatusUnauthorized)
 			return
 		}
 
 		// All good, forward the request
-		logRequest(r, "=> %s (user=%s)", hostCfg.Upstream, user)
+		logRequest(r, "=> %s (user=%s)", hostCfg.Upstream, username)
 		p.P.ServeHTTP(w, r)
 	} else {
 		logRequest(r, "no upstream configured for request")
@@ -110,4 +103,87 @@ func (p *Proxy) hostForRequest(r *http.Request) (*config.HostConfig, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (p *Proxy) authRequest(username, password string, hostCfg *config.HostConfig) (bool, error) {
+	var passOk bool
+	var authenticator auth.Authenticator
+	for _, a := range p.authenticators {
+		ok, err := a.CheckPassword(username, password)
+		if ok && err == nil {
+			passOk = true
+			authenticator = a
+			break
+		}
+	}
+
+	if !passOk {
+		return false, auth.ErrBadPassword
+	}
+
+	// Check access rules
+	allowed, err := p.checkAccess(username, hostCfg, authenticator)
+	if err != nil {
+		return false, err
+	}
+	if !allowed {
+		return false, auth.ErrAccessDenied
+	}
+	return true, nil
+}
+
+func (p *Proxy) checkAccess(username string, hostCfg *config.HostConfig, authenticator auth.Authenticator) (bool, error) {
+	// Check DenyUsers first
+	for _, user := range hostCfg.DenyUsers {
+		if username == user {
+			return false, nil
+		}
+	}
+
+	// Only load groups if required
+	var groups *types.StringSet
+	if len(hostCfg.AllowGroups) > 0 || len(hostCfg.DenyGroups) > 0 {
+		var err error
+		groups, err = authenticator.GetGroups(username)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	// Check DenyGroups
+	for _, dg := range hostCfg.DenyGroups {
+		if groups.Contains(dg) {
+			return false, nil
+		}
+	}
+
+	// Allow by default if AllowAll is set
+	allowed := hostCfg.AllowAll
+
+	// Check AllowUsers
+	if !allowed {
+		for _, user := range hostCfg.AllowUsers {
+			if user == username {
+				allowed = true
+				break
+			}
+		}
+	}
+
+	// Check AllowGroups
+	if !allowed {
+		for _, ag := range hostCfg.AllowGroups {
+			if groups.Contains(ag) {
+				allowed = true
+				break
+			}
+		}
+	}
+
+	if !allowed {
+		return false, nil
+	}
+
+	// User us allowed access
+	return true, nil
 }

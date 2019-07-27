@@ -2,7 +2,7 @@ package auth
 
 import (
 	"github.com/rgooding/authproxy/config"
-	"net/http"
+	"github.com/rgooding/authproxy/types"
 )
 
 type InternalAuthenticator struct {
@@ -19,66 +19,19 @@ func NewInternalAuthenticator(users []*config.InternalUser) *InternalAuthenticat
 	}
 }
 
-func (a InternalAuthenticator) AuthRequest(r *http.Request, host *config.HostConfig) (string, error) {
-	username, password, ok := r.BasicAuth()
-	if !ok {
-		return "", ErrNoAuth
-	}
-	user, ok := a.userList[username]
-	if !ok || password != user.Password {
-		return "", ErrBadPassword
-	}
-
-	// User authenticated successfully. Are they allowed access?
-	groupMap := make(map[string]bool)
-	// Only get the groups from LDAP if we need them on this request
-	if len(host.AllowGroups) > 0 || len(host.DenyGroups) > 0 {
-		// Put groups in a map to speed up the check
-		for _, g := range user.Groups {
-			groupMap[g] = true
+func (a *InternalAuthenticator) CheckPassword(username, password string) (bool, error) {
+	if user, ok := a.userList[username]; ok {
+		if password == user.Password {
+			return true, nil
 		}
+		return false, ErrBadPassword
 	}
+	return false, ErrUserNotFound
+}
 
-	// Check DenyUsers first
-	for _, user := range host.DenyUsers {
-		if username == user {
-			return username, ErrAccessDenied
-		}
+func (a *InternalAuthenticator) GetGroups(username string) (*types.StringSet, error) {
+	if user, ok := a.userList[username]; ok {
+		return types.NewSetFromList(user.Groups), nil
 	}
-
-	// Check DenyGroups
-	for _, dg := range host.DenyGroups {
-		if _, ok := groupMap[dg]; ok {
-			return username, ErrAccessDenied
-		}
-	}
-
-	// Check Allow rules
-	allowed := host.AllowAll
-	// Check AllowUsers
-	if !allowed {
-		for _, user := range host.AllowUsers {
-			if user == username {
-				allowed = true
-				break
-			}
-		}
-	}
-
-	// Check AllowGroups
-	if !allowed && len(host.AllowGroups) > 0 {
-		for _, ag := range host.AllowGroups {
-			if _, ok := groupMap[ag]; ok {
-				allowed = true
-				break
-			}
-		}
-	}
-
-	if !allowed {
-		return username, ErrAccessDenied
-	}
-
-	// Authentication successful
-	return username, nil
+	return nil, ErrUserNotFound
 }
