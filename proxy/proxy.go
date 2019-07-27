@@ -151,10 +151,8 @@ func (p *Proxy) checkAccess(username string, hostCfg *config.HostConfig, authent
 	}
 
 	// Check DenyGroups
-	for _, dg := range hostCfg.DenyGroups {
-		if groups.Contains(dg) {
-			return false, nil
-		}
+	if groups.ContainsOne(hostCfg.DenyGroups) {
+		return false, nil
 	}
 
 	// Allow by default if AllowAll is set
@@ -172,18 +170,8 @@ func (p *Proxy) checkAccess(username string, hostCfg *config.HostConfig, authent
 
 	// Check AllowGroups
 	if !allowed {
-		for _, ag := range hostCfg.AllowGroups {
-			if groups.Contains(ag) {
-				allowed = true
-				break
-			}
-		}
+		allowed = groups.ContainsOne(hostCfg.AllowGroups)
 	}
 
-	if !allowed {
-		return false, nil
-	}
-
-	// User us allowed access
-	return true, nil
+	return allowed, nil
 }

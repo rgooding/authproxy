@@ -17,9 +17,18 @@ func (s *StringSet) Contains(item string) bool {
 	return ok
 }
 
+func (s *StringSet) ContainsOne(items []string) bool {
+	for _, item := range items {
+		if s.Contains(item) {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *StringSet) List() []string {
 	var list []string
-	for item, _ := range s.items {
+	for item := range s.items {
 		list = append(list, item)
 	}
 	return list

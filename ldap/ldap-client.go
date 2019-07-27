@@ -45,28 +45,19 @@ func (lc *LDAPClient) connect() error {
 		}
 
 		if lc.UseSSL {
-			if lc.ClientCertificates != nil && len(lc.ClientCertificates) > 0 {
-				config.Certificates = lc.ClientCertificates
-			}
+			config.Certificates = lc.ClientCertificates
 			l, err = ldap.DialTLS("tcp", address, config)
-			if err != nil {
-				return err
-			}
 		} else {
 			l, err = ldap.Dial("tcp", address)
-			if err != nil {
-				return err
-			}
 
 			// Reconnect with TLS
-			if lc.StartTLS {
+			if lc.StartTLS && err == nil {
 				err = l.StartTLS(config)
-				if err != nil {
-					return err
-				}
 			}
 		}
-
+		if err != nil {
+			return err
+		}
 		lc.Conn = l
 	}
 	return nil
