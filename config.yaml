@@ -10,14 +10,15 @@ https_port: 0
 https_redirect: true
 
 # Internal users. This list will be consulted before LDAP
+# Passwords are hashed with bcrypt. Use the cmd/hashpasswd tool to generate a password hash.
 internal_users:
   - username: user1
-    password: password1
+    password: $2a$10$pws.MxuObyAggt.GiNXZgO8nODVaWDJToZ4YspwZs3QqYWRJFr8EK
     groups:
       - group1
       - group2
   - username: user2
-    password: password2
+    password: $2a$10$w99MXE.TjctuGJGXjFPlKuL6ksmDbRSy7B9/JAbNcZNfceMRhS4ya
     groups:
       - group2
       - group3

@@ -1,1 +1,3 @@
 config.local.yaml
+authproxy
+cmd/hashpasswd/hashpasswd

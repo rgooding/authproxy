@@ -21,7 +21,7 @@ func NewInternalAuthenticator(users []*config.InternalUser) *InternalAuthenticat
 
 func (a *InternalAuthenticator) CheckPassword(username, password string) (bool, error) {
 	if user, ok := a.userList[username]; ok {
-		if password == user.Password {
+		if ComparePasswordAndHash(password, user.Password) {
 			return true, nil
 		}
 		return false, ErrBadPassword
