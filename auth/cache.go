@@ -1,15 +1,15 @@
 package auth
 
 import (
-	"crypto/md5"
 	"github.com/rgooding/authproxy/types"
+	"log"
 	"sync"
 	"time"
 )
 
 type Cache struct {
 	ttl       time.Duration
-	creds     map[string][16]byte
+	creds     map[string]string
 	credsExp  map[string]time.Time
 	groups    map[string]*types.StringSet
 	groupsExp map[string]time.Time
@@ -19,7 +19,7 @@ type Cache struct {
 func NewCache(ttl time.Duration) *Cache {
 	return &Cache{
 		ttl:       ttl,
-		creds:     make(map[string][16]byte),
+		creds:     make(map[string]string),
 		credsExp:  make(map[string]time.Time),
 		groups:    make(map[string]*types.StringSet),
 		groupsExp: make(map[string]time.Time),
@@ -29,8 +29,13 @@ func NewCache(ttl time.Duration) *Cache {
 func (c *Cache) AddCreds(username, password string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.creds[username] = md5.Sum([]byte(password))
-	c.credsExp[username] = time.Now().Add(c.ttl)
+	h, err := HashPassword(password)
+	if err != nil {
+		log.Printf("Error hashing password: %s", err.Error())
+	} else {
+		c.creds[username] = h
+		c.credsExp[username] = time.Now().Add(c.ttl)
+	}
 }
 
 func (c *Cache) Drop(username string) {
@@ -49,8 +54,8 @@ func (c *Cache) CheckCreds(username, password string) bool {
 		if exp.Before(time.Now()) {
 			return false
 		}
-		if h, ok := c.creds[username]; ok && h == md5.Sum([]byte(password)) {
-			return true
+		if h, ok := c.creds[username]; ok {
+			return ComparePasswordAndHash(password, h)
 		}
 	}
 	return false
