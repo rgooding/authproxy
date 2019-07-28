@@ -87,9 +87,11 @@ func (p *Proxy) Director(r *http.Request) {
 	if host, found := p.hostForRequest(r); found {
 		r.URL.Scheme = host.UpstreamUrl.Scheme
 		r.URL.Host = host.UpstreamUrl.Host
-		//r.Host = host.UpstreamUrl.Host
 		r.Header.Add("X-Forwarded-Host", r.Host)
 		r.Header.Add("X-Origin-Host", host.UpstreamUrl.Host)
+		if !host.PreserveHost {
+			r.Host = host.UpstreamUrl.Host
+		}
 	}
 }
 

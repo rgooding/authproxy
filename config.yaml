@@ -53,7 +53,12 @@ hosts:
   - hostnames:
       - test1.mydomain.xyz
       - test1.otherdomain.com
+    # The URL of the upstream server
     upstream: "http://127.0.0.1:4000"
+    # If preserve_host is true then the Host header sent to the upstream will contain the hostname of the original request
+    # If false then the Host header will contain the hostname from the upstream URL
+    preserve_host: true
+
     allow_groups:
       - group1
       - group2

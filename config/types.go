@@ -30,9 +30,10 @@ type TlsConfig struct {
 }
 
 type HostConfig struct {
-	Hostnames   []string `yaml:"hostnames"`
-	Upstream    string   `yaml:"upstream"`
-	UpstreamUrl *url.URL
+	Hostnames    []string `yaml:"hostnames"`
+	Upstream     string   `yaml:"upstream"`
+	UpstreamUrl  *url.URL
+	PreserveHost bool `yaml:"preserve_host"`
 
 	AuthRealm   string   `yaml:"auth_realm"`
 	AllowAll    bool     `yaml:"allow_all"`
